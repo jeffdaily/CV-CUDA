@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -57,6 +57,7 @@ set(CV_CUDA_PRIV_LEGACY_OP_FILES
     normalize.cu
     pad_and_stack.cu
     normalize_var_shape.cu
+    gamma_contrast.cu
     gamma_contrast_var_shape.cu
     pillow_resize.cu
     pillow_resize_var_shape.cu
@@ -104,11 +105,47 @@ else()
     list(APPEND CV_CUDA_PRIV_LEGACY_FILES ${CV_CUDA_PRIV_LEGACY_OP_FILES})
 endif()
 
-# cuOSD-backed kernels (osd, box_blur, the text backend) are scoped out of the
-# ROCm build (cuOSD is a prebuilt CUDA-only static lib with no source).
+# The on-screen display drawing kernels (osd, box_blur, the text backend) are not
+# built for ROCm yet; the rest of the legacy kernels are.
 if(USE_HIP)
     list(FILTER CV_CUDA_PRIV_LEGACY_FILES EXCLUDE REGEX "osd\\.cu|box_blur\\.cu|textbackend/")
 endif()
+
+cvcuda_add_targeted_cuda_architectures_to_sources(
+    ARCHITECTURES 86 89
+    SOURCES
+        bilateral_filter.cu
+        bilateral_filter_var_shape.cu
+        filter.cu
+        filter_var_shape.cu
+        joint_bilateral_filter.cu
+        pillow_resize.cu
+        pillow_resize_var_shape.cu
+        random_resized_crop.cu
+        random_resized_crop_var_shape.cu
+        reformat.cu
+        resize_var_shape.cu
+        rotate.cu
+        rotate_var_shape.cu
+        warp.cu
+        warp_var_shape.cu
+    SELECTED_SOURCES_VAR CV_CUDA_PRIV_LEGACY_FILES
+)
+
+cvcuda_add_targeted_cuda_architectures_to_sources(
+    ARCHITECTURES 86
+    SOURCES
+        gamma_contrast.cu
+        gamma_contrast_var_shape.cu
+    SELECTED_SOURCES_VAR CV_CUDA_PRIV_LEGACY_FILES
+)
+
+cvcuda_add_targeted_cuda_architectures_to_sources(
+    ARCHITECTURES 89
+    SOURCES
+        flip.cu
+    SELECTED_SOURCES_VAR CV_CUDA_PRIV_LEGACY_FILES
+)
 
 add_library(cvcuda_legacy STATIC
     ${CV_CUDA_PRIV_LEGACY_FILES}
@@ -122,3 +159,5 @@ target_link_libraries(cvcuda_legacy
         cvcuda_headers
         -lrt
 )
+
+target_link_libraries(cvcuda_legacy PRIVATE cvcuda_nvtx_config)

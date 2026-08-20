@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,6 +18,16 @@ add_subdirectory(legacy)
 set(CV_CUDA_PRIV_FILES IOperator.cpp)
 
 set(CV_CUDA_PRIV_OP_FILES
+    OpJpegCompressionDistortion.cu
+    OpAdjustHue.cu
+    OpAdjustSaturation.cu
+    OpAdjustSharpness.cu
+    OpAdjustContrast.cu
+    OpInvert.cu
+    OpSolarize.cu
+    OpPosterize.cu
+    OpAutoContrast.cu
+    OpCLAHE.cu
     OpOSD.cpp
     OpHistogramEq.cpp
     OpAdvCvtColor.cu
@@ -32,6 +42,8 @@ set(CV_CUDA_PRIV_OP_FILES
     OpColorTwist.cu
     OpCropFlipNormalizeReformat.cu
     OpHQResize.cu
+    OpHQResize2D.cu
+    OpHQResize3D.cu
     OpNonMaximumSuppression.cu
     OpReformat.cpp
     OpResize.cpp
@@ -46,6 +58,7 @@ set(CV_CUDA_PRIV_OP_FILES
     OpLaplacian.cpp
     OpGaussian.cpp
     OpErase.cpp
+    OpEraseRegion.cu
     OpAverageBlur.cpp
     OpConv2D.cpp
     OpMedianBlur.cpp
@@ -56,7 +69,7 @@ set(CV_CUDA_PRIV_OP_FILES
     OpWarpAffine.cpp
     OpWarpPerspective.cpp
     OpComposite.cpp
-    OpChannelReorder.cpp
+    OpChannelReorder.cu
     OpFlip.cpp
     OpGammaContrast.cpp
     OpPillowResize.cpp
@@ -68,6 +81,7 @@ set(CV_CUDA_PRIV_OP_FILES
     OpLabel.cu
     OpPairwiseMatcher.cu
     OpStack.cpp
+    OpStackKernels.cu
     OpFindHomography.cu
     OpResizeCropConvertReformat.cu
 )
@@ -91,11 +105,41 @@ else()
     list(APPEND CV_CUDA_PRIV_FILES ${CV_CUDA_PRIV_OP_FILES})
 endif()
 
-# cuOSD is a prebuilt CUDA-only static lib with no source, so the operators that
-# depend on it (OSD, bounding box, box blur) are scoped out of the ROCm build.
+# The on-screen display drawing path (OSD, bounding box, box blur) is not built
+# for ROCm yet; the rest of the operators are.
 if(USE_HIP)
     list(FILTER CV_CUDA_PRIV_FILES EXCLUDE REGEX "OpOSD|OpBndBox|OpBoxBlur")
 endif()
+
+cvcuda_add_targeted_cuda_architectures_to_sources(
+    ARCHITECTURES 86 89
+    SOURCES
+        OpAdjustContrast.cu
+        OpAdvCvtColor.cu
+        OpChannelReorder.cu
+        OpEraseRegion.cu
+        OpHQResize2D.cu
+        OpInvert.cu
+        OpJpegCompressionDistortion.cu
+        OpMinMaxLoc.cu
+        OpResize.cu
+    SELECTED_SOURCES_VAR CV_CUDA_PRIV_FILES
+)
+
+cvcuda_add_targeted_cuda_architectures_to_sources(
+    ARCHITECTURES 86
+    SOURCES
+        OpResizeCropConvertReformat.cu
+    SELECTED_SOURCES_VAR CV_CUDA_PRIV_FILES
+)
+
+cvcuda_add_targeted_cuda_architectures_to_sources(
+    ARCHITECTURES 89
+    SOURCES
+        OpBrightnessContrast.cu
+        OpPairwiseMatcher.cu
+    SELECTED_SOURCES_VAR CV_CUDA_PRIV_FILES
+)
 
 add_library(cvcuda_priv STATIC
     ${CV_CUDA_PRIV_FILES}
@@ -114,3 +158,5 @@ target_link_libraries(cvcuda_priv
         CUDA::cublasLt_static
         -lrt
 )
+
+target_link_libraries(cvcuda_priv PRIVATE cvcuda_nvtx_config)

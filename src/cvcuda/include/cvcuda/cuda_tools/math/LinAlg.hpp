@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: Apache-2.0
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -134,7 +134,7 @@ public:
      *
      * @return Pointer to the first element of this vector.
      */
-    constexpr __host__ __device__ operator const T *() const
+    explicit constexpr __host__ __device__ operator const T *() const
     {
         return &m_data[0];
     }
@@ -144,7 +144,7 @@ public:
      *
      * @return Pointer to the first element of this vector.
      */
-    constexpr __host__ __device__ operator T *()
+    explicit constexpr __host__ __device__ operator T *()
     {
         return &m_data[0];
     }
@@ -225,9 +225,9 @@ public:
     // __shared__ object's type must have no initializer, which clang enforces in
     // the host pass too.
 #if defined(__CUDA_ARCH__) || defined(__HIP_PLATFORM_AMD__) || defined(USE_HIP)
-    T m_data[N];
+    T m_data[N]; // NOSONAR: public POD storage enables aggregate initialization in device code.
 #else
-    T m_data[N] = {};
+    T m_data[N] = {}; // NOSONAR: public POD storage enables aggregate initialization.
 #endif
 };
 
@@ -462,7 +462,7 @@ public:
     }
 
     // On-purpose public data to allow POD-class direct initialization.
-    Vector<T, N> m_data[M];
+    Vector<T, N> m_data[M]; // NOSONAR: public POD storage enables aggregate initialization.
 };
 
 namespace detail {
@@ -783,10 +783,10 @@ template<class T, int M, int N>
 constexpr __host__ __device__ Matrix<T, M, N> &operator*=(Matrix<T, M, N> &lhs, T rhs)
 {
 #pragma unroll
-    for (int i = 0; i < lhs.rows(); ++i)
+    for (int i = 0; i < lhs.rows(); ++i) // NOSONAR: CUDA unroll loop.
     {
 #pragma unroll
-        for (int j = 0; j < lhs.cols(); ++j)
+        for (int j = 0; j < lhs.cols(); ++j) // NOSONAR: CUDA unroll loop.
         {
             lhs[i][j] *= rhs;
         }
@@ -888,10 +888,10 @@ constexpr __host__ __device__ Matrix<T, M, N> operator*(const Matrix<T, M, 1> &m
     Matrix<T, M, N> r;
 
 #pragma unroll
-    for (int i = 0; i < r.rows(); ++i)
+    for (int i = 0; i < r.rows(); ++i) // NOSONAR: CUDA unroll loop.
     {
 #pragma unroll
-        for (int j = 0; j < r.cols(); ++j)
+        for (int j = 0; j < r.cols(); ++j) // NOSONAR: CUDA unroll loop.
         {
             r[i][j] = m[i][0] * v[j];
         }
@@ -1429,7 +1429,7 @@ constexpr __host__ Matrix<T, M, N> rev(const Matrix<T, M, N> &b, const Matrix<T,
 // Determinant -----------------------------------------------------------------
 
 template<class T>
-constexpr __host__ __device__ T det(const Matrix<T, 0, 0> &m)
+constexpr __host__ __device__ T det(const Matrix<T, 0, 0> &)
 {
     return T{1};
 }
@@ -1481,7 +1481,7 @@ constexpr __host__ __device__ bool lu_inplace(Matrix<T, N, N> &m, Vector<int, N>
 #pragma unroll
         for (int j = 0; j < N; ++j)
         {
-            big = cuda::max<F>(big, cuda::abs(m[i][j]));
+            big = cuda::max<F>(big, static_cast<F>(cuda::abs(m[i][j])));
         }
 
         if (big == 0)
@@ -1489,7 +1489,7 @@ constexpr __host__ __device__ bool lu_inplace(Matrix<T, N, N> &m, Vector<int, N>
             return false;
         }
 
-        v[i] = 1.0 / big;
+        v[i] = F{1} / big;
     }
 
 #pragma unroll
@@ -1501,7 +1501,7 @@ constexpr __host__ __device__ bool lu_inplace(Matrix<T, N, N> &m, Vector<int, N>
 #pragma unroll
         for (int i = k; i < N; ++i)
         {
-            F aux = v[i] * cuda::abs(m[i][k]);
+            F aux = v[i] * static_cast<F>(cuda::abs(m[i][k]));
 
             if (aux > big)
             {
@@ -1527,7 +1527,8 @@ constexpr __host__ __device__ bool lu_inplace(Matrix<T, N, N> &m, Vector<int, N>
 #pragma unroll
         for (int i = k + 1; i < N; ++i)
         {
-            T aux = m[i][k] /= m[k][k];
+            m[i][k] /= m[k][k];
+            T aux = m[i][k];
 
 #pragma unroll
             for (int j = k + 1; j < N; ++j)
@@ -1613,7 +1614,7 @@ constexpr __host__ __device__ void inv_inplace(Matrix<T, 1, 1> &m, const T &d)
 }
 
 template<class T>
-constexpr __host__ __device__ Matrix<T, 1, 1> inv(const Matrix<T, 1, 1> &m, const T &d)
+constexpr __host__ __device__ Matrix<T, 1, 1> inv(const Matrix<T, 1, 1> &, const T &d)
 {
     Matrix<T, 1, 1> A;
     inv_inplace(A, d);
