@@ -44,6 +44,16 @@ namespace {
 
 constexpr int WARP_WIDTH = 32;
 
+// The reduction partitions the block as warp = tid / WARP_WIDTH, so the shuffles
+// below pass an explicit width of WARP_WIDTH to stay within a 32-lane subgroup on
+// a 64-lane CDNA wavefront. The mask only marks participants and must be 64-bit
+// on ROCm.
+#if defined(__HIP_PLATFORM_AMD__) || defined(USE_HIP)
+#define NVCV_SHFL_MASK NVCV_WARP_FULL_MASK
+#else
+#define NVCV_SHFL_MASK 0xffffffffu
+#endif
+
 // Reduce each warp with shuffles, write one per-warp pair to shared memory, and
 // have the first warp fold those pairs. nThreads must be a multiple of 32 (the
 // reduction launches use 128 or 256 threads). partialStride is the number of
@@ -67,8 +77,8 @@ inline __device__ void ReduceBlockToPartials(float *sm, int nThreads, int tid, i
 #pragma unroll
             for (int offset = WARP_WIDTH / 2; offset > 0; offset >>= 1)
             {
-                warpMin = fminf(warpMin, __shfl_down_sync(0xffffffffu, warpMin, offset));
-                warpMax = fmaxf(warpMax, __shfl_down_sync(0xffffffffu, warpMax, offset));
+                warpMin = fminf(warpMin, __shfl_down_sync(NVCV_SHFL_MASK, warpMin, offset, WARP_WIDTH));
+                warpMax = fmaxf(warpMax, __shfl_down_sync(NVCV_SHFL_MASK, warpMax, offset, WARP_WIDTH));
             }
             if (lane == 0)
             {
@@ -91,8 +101,8 @@ inline __device__ void ReduceBlockToPartials(float *sm, int nThreads, int tid, i
 #pragma unroll
                 for (int offset = WARP_WIDTH / 2; offset > 0; offset >>= 1)
                 {
-                    blockMin = fminf(blockMin, __shfl_down_sync(0xffffffffu, blockMin, offset));
-                    blockMax = fmaxf(blockMax, __shfl_down_sync(0xffffffffu, blockMax, offset));
+                    blockMin = fminf(blockMin, __shfl_down_sync(NVCV_SHFL_MASK, blockMin, offset, WARP_WIDTH));
+                    blockMax = fmaxf(blockMax, __shfl_down_sync(NVCV_SHFL_MASK, blockMax, offset, WARP_WIDTH));
                 }
                 if (lane == 0)
                 {
