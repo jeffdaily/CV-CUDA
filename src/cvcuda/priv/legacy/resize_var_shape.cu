@@ -637,7 +637,7 @@ __device__ __forceinline__ void resizeAreaPlane(const cuda::ImageBatchVarShapeWr
 #if defined(__HIP_PLATFORM_AMD__) || defined(USE_HIP)
             work_type out = {}; // HIP_vector_type's single-arg ctor is explicit; value-init zeroes all lanes
 #else
-            work_type out   = {0};
+            work_type out = {0};
 #endif
 
             // Integer downscale: the box [sx1,sx2) x [sy1,sy2) is fully in-bounds, so read the source
@@ -675,7 +675,7 @@ __device__ __forceinline__ void resizeAreaPlane(const cuda::ImageBatchVarShapeWr
 #if defined(__HIP_PLATFORM_AMD__) || defined(USE_HIP)
         work_type out = {}; // HIP_vector_type's single-arg ctor is explicit; value-init zeroes all lanes
 #else
-        work_type out   = {0};
+        work_type out = {0};
 #endif
 
         int4 srcCoord = {0, 0, plane, batch_idx};
@@ -862,11 +862,11 @@ __device__ __forceinline__ void resizeAreaContract2xPlane(const cuda::ImageBatch
 #else
         work_type acc = {0};
 #endif
-        acc           = acc + win0[2 * i] * 0.25f;
-        acc           = acc + win0[2 * i + 1] * 0.25f;
-        acc           = acc + win1[2 * i] * 0.25f;
-        acc           = acc + win1[2 * i + 1] * 0.25f;
-        out[i]        = cuda::SaturateCast<T>(acc);
+        acc    = acc + win0[2 * i] * 0.25f;
+        acc    = acc + win0[2 * i + 1] * 0.25f;
+        acc    = acc + win1[2 * i] * 0.25f;
+        acc    = acc + win1[2 * i + 1] * 0.25f;
+        out[i] = cuda::SaturateCast<T>(acc);
     }
 
     T *dstRow = dst.ptr(batch_idx, plane, y, 0);
