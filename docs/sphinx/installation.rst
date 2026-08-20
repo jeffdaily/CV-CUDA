@@ -289,7 +289,7 @@ The central ``build.sh`` script is used to build the project, Python bindings an
   disables them (default: ``AUTO``).
 - ``-DCVCUDA_AARCH64_JETSON=ON|OFF``: aarch64 only -- build for Jetson Orin platforms only, targeting only Orin-relevant GPU architectures (sm_86, sm_87, sm_89) instead of the full SBSA set; package file names carry an ``aarch64-jetson-linux`` token instead of ``aarch64-linux`` so Jetson and SBSA artifacts stay distinguishable (default: OFF)
 - ``-DUSE_HIP=1|0``: Build the GPU code with HIP for AMD GPUs (ROCm) instead of CUDA (default: disabled). See :ref:`Building for AMD GPUs (ROCm) <build-rocm>` below.
-- ``-DCMAKE_HIP_ARCHITECTURES='gfx90a'``: AMD GPU architecture(s) to build for when ``USE_HIP=1`` (defaults to ``gfx90a`` when unset). Set to your target, e.g. ``gfx1100`` for RDNA3 desktop GPUs.
+- ``-DCMAKE_HIP_ARCHITECTURES='gfx90a'``: AMD GPU architecture(s) to build for when ``USE_HIP=1``. When unset, the build detects the architecture of the GPU(s) in the build host. Set it explicitly to build for another target, e.g. ``gfx1100`` for RDNA3 desktop GPUs.
 
 All boolean options accept both numeric (``0``/``1``) and CMake boolean values (``ON``/``OFF``, ``YES``/``NO``, ``TRUE``/``FALSE``).
 
@@ -348,7 +348,7 @@ Build with HIP enabled, selecting the target AMD architecture:
 
 If ROCm is not on your ``PATH``, pass ``-DCMAKE_PREFIX_PATH=/opt/rocm`` so CMake finds the hip* packages (``find_package(hip)`` and friends).
 
-When ``CMAKE_HIP_ARCHITECTURES`` is left unset it defaults to ``gfx90a``; set it to the architecture of your GPU (for example ``gfx1100`` for RDNA3 desktop cards). No source or CMake edits are needed to retarget. The build outputs the same library and test layout as the CUDA build, and the test suites run unchanged on the AMD GPU.
+When ``CMAKE_HIP_ARCHITECTURES`` is left unset the build detects the architecture of the GPU(s) in the build host, and fails if it finds none; set it explicitly to build for another target (for example ``gfx1100`` for RDNA3 desktop cards). No source or CMake edits are needed to retarget. The build outputs the same library and test layout as the CUDA build, and the test suites run unchanged on the AMD GPU.
 
 This support has been validated on the CDNA2 ``gfx90a`` (MI200 series) and RDNA3 ``gfx1100`` architectures on Linux.
 
