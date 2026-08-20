@@ -580,7 +580,7 @@ inline ReductionGrid GetReductionGrid(int64_t pixels, int numSamples, bool isU8)
         {
             return {fallback, false};
         }
-        return {dim3{kMeanBlock / kF32MeanThreads, 1, static_cast<unsigned int>(numSamples)}, true};
+        return {dim3(kMeanBlock / kF32MeanThreads, 1, static_cast<unsigned int>(numSamples)), true};
     }
 
     // The final pass casts each complete legacy lane sum to float once. Keep that cast exact so the
@@ -607,7 +607,7 @@ inline ReductionGrid GetReductionGrid(int64_t pixels, int numSamples, bool isU8)
         return {fallback, false};
     }
 
-    return {dim3{static_cast<unsigned int>(numPartials), 1, static_cast<unsigned int>(numSamples)}, true};
+    return {dim3(static_cast<unsigned int>(numPartials), 1, static_cast<unsigned int>(numSamples)), true};
 }
 
 inline dim3 GetApplyGrid(int width, int height, int numSamples)

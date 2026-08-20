@@ -198,7 +198,7 @@ struct OpMin : OpSingleExtremaBase<T, OpMin<T>>
     // whose ctor is non-constexpr under HIP (HIP_vector_type), so a static const
     // initializer cannot be emitted on the device (clang). Returning it by value
     // keeps the same codegen after inlining on both backends.
-    __host__ __device__ static OutType init()
+    static __host__ __device__ OutType init()
     {
         return OutType{cuda::TypeTraits<OutType>::max};
     }
@@ -233,7 +233,7 @@ struct OpMax : OpSingleExtremaBase<T, OpMax<T>>
     using typename Base::BaseOutType;
     using typename Base::OutType;
 
-    __host__ __device__ static OutType init()
+    static __host__ __device__ OutType init()
     {
         return OutType{cuda::Lowest<OutType>};
     }
@@ -267,7 +267,7 @@ struct OpMinMax
     using BaseOutType = cuda::BaseType<OutputType<T>>;
     using OutType     = cuda::MakeType<BaseOutType, 2>;
 
-    __host__ __device__ static OutType init()
+    static __host__ __device__ OutType init()
     {
         return OutType{cuda::TypeTraits<OutType>::max, cuda::Lowest<OutType>};
     }

@@ -49,9 +49,9 @@ constexpr int WARP_WIDTH = 32;
 // a 64-lane CDNA wavefront. The mask only marks participants and must be 64-bit
 // on ROCm.
 #if defined(__HIP_PLATFORM_AMD__) || defined(USE_HIP)
-#define NVCV_SHFL_MASK NVCV_WARP_FULL_MASK
+#    define NVCV_SHFL_MASK NVCV_WARP_FULL_MASK
 #else
-#define NVCV_SHFL_MASK 0xffffffffu
+#    define NVCV_SHFL_MASK 0xffffffffu
 #endif
 
 // Reduce each warp with shuffles, write one per-warp pair to shared memory, and
