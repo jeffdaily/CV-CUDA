@@ -74,6 +74,13 @@ NVCVMemoryBuffer DefaultAllocator::doAllocCudaMem(int64_t size, int32_t align)
     // padding is zero. Zero new device allocations to keep that contract; the
     // operators themselves write every valid pixel and are unaffected.
     NVCV_CHECK_THROW(::cudaMemset(ptr, 0, size));
+    // The blocking memset is still enqueued on the NULL stream for device memory, and the NULL
+    // stream does not synchronize with a stream created with cudaStreamNonBlocking. A caller that
+    // allocates here and then uploads into the buffer on such a stream would otherwise race: the
+    // zero-fill can land after the H2D copy and wipe the uploaded data. Wait for it here, so the
+    // buffer is observably zero by the time this returns. The allocation above already
+    // synchronizes, so this adds no extra synchronization point.
+    NVCV_CHECK_THROW(::cudaStreamSynchronize(0));
 #endif
 
     // REVISIT: can we do better than this?
