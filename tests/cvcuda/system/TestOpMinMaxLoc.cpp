@@ -359,10 +359,10 @@ static void DownloadMinMaxParityResults(const nvcv::Tensor &minVal, const nvcv::
 
     for (int sample = 0; sample < numSamples; ++sample)
     {
-        results.minVal[sample] = test::ValueAt<uint1>(minValVec, valStrides, {sample}).x;
-        results.maxVal[sample] = test::ValueAt<uint1>(maxValVec, valStrides, {sample}).x;
-        results.numMin[sample] = test::ValueAt<int1>(numMinVec, numStrides, {sample}).x;
-        results.numMax[sample] = test::ValueAt<int1>(numMaxVec, numStrides, {sample}).x;
+        results.minVal[sample] = test::ValueAt<uint1>(minValVec, valStrides, int1{sample}).x;
+        results.maxVal[sample] = test::ValueAt<uint1>(maxValVec, valStrides, int1{sample}).x;
+        results.numMin[sample] = test::ValueAt<int1>(numMinVec, numStrides, int1{sample}).x;
+        results.numMax[sample] = test::ValueAt<int1>(numMaxVec, numStrides, int1{sample}).x;
 
         for (int i = 0; i < std::min(results.numMin[sample], capacity); ++i)
         {

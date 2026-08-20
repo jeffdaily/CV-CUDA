@@ -65,7 +65,11 @@ __device__ __forceinline__ void gaussian_noise_advance_normal_state(unsigned lon
     // curand's Box-Muller path caches one normal sample; consume it before
     // skipahead so localState.boxmuller_flag / EXTRA_FLAG_NORMAL advancement
     // stays deterministic. Re-check this if curand_normal internals change.
+#if defined(__HIP_PLATFORM_AMD__) || defined(USE_HIP)
+    if (cvcuda_hipHasCachedNormal(localState))
+#else
     if (localState.boxmuller_flag == EXTRA_FLAG_NORMAL)
+#endif
     {
         (void)curand_normal(&localState);
         if (--normalCount == 0)
@@ -146,7 +150,11 @@ inline void gaussian_noise_copy_segment_states(curandState *dst, const curandSta
 
 __device__ __forceinline__ float2 gaussian_noise_normal2(curandState &localState)
 {
+#if defined(__HIP_PLATFORM_AMD__) || defined(USE_HIP)
+    if (cvcuda_hipHasCachedNormal(localState))
+#else
     if (localState.boxmuller_flag == EXTRA_FLAG_NORMAL)
+#endif
     {
         return {curand_normal(&localState), curand_normal(&localState)};
     }

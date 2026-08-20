@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_executable(cvcuda_test_unit
+set(CVCUDA_TEST_UNIT_SOURCES
     TestCudaDeviceUtils.cpp
     TestLegacyHelpers.cpp
     TestWorkspaceAllocator.cpp
@@ -27,6 +27,14 @@ add_executable(cvcuda_test_unit
     TestOpInvertPolicy.cpp
     TestTextBackend.cpp
 )
+
+# The box blur operator and the on-screen display text backend are not built for
+# ROCm, so their unit tests are left out of that build.
+if(USE_HIP)
+    list(FILTER CVCUDA_TEST_UNIT_SOURCES EXCLUDE REGEX "TestOpBoxBlur|TestTextBackend")
+endif()
+
+add_executable(cvcuda_test_unit ${CVCUDA_TEST_UNIT_SOURCES})
 
 get_target_property(CVCUDA_SOURCE_DIR cvcuda SOURCE_DIR)
 

@@ -857,7 +857,11 @@ __device__ __forceinline__ void resizeAreaContract2xPlane(const cuda::ImageBatch
 #pragma unroll
     for (int i = 0; i < RVS_NIX<T>; ++i)
     {
+#if defined(__HIP_PLATFORM_AMD__) || defined(USE_HIP)
+        work_type acc = {}; // HIP_vector_type's single-arg ctor is explicit; value-init zeroes all lanes
+#else
         work_type acc = {0};
+#endif
         acc           = acc + win0[2 * i] * 0.25f;
         acc           = acc + win0[2 * i + 1] * 0.25f;
         acc           = acc + win1[2 * i] * 0.25f;
@@ -1461,7 +1465,11 @@ __global__ void resize_area_fractional_pack_planar(cuda::ImageBatchVarShapeWrap<
                 scale[0]    = 1.f / (fminf(scale_x, width - fsx1[0]) * fminf(scale_y, height - fsy1));
             }
 
-            work_type acc = {0};
+    #if defined(__HIP_PLATFORM_AMD__) || defined(USE_HIP)
+        work_type acc = {}; // HIP_vector_type's single-arg ctor is explicit; value-init zeroes all lanes
+#else
+        work_type acc = {0};
+#endif
 
             for (int dy = sy1; dy < sy2; ++dy)
             {
