@@ -1444,9 +1444,24 @@ void FindHomographyWrapper(SrcDstWrapper srcWrap, SrcDstWrapper dstWrap, ModelTy
     // sets do not reserve idle warps that could otherwise keep more independent batches resident.
     const int refinementWork = 2 * numPoints;
     block.x = refinementWork <= 32 ? 32 : refinementWork <= 64 ? 64 : refinementWork <= 128 ? 128 : 256;
-    grid.x  = 1;
-    grid.y  = batchSize;
-    grid.z  = 1;
+#if defined(__HIP_PLATFORM_AMD__) || defined(USE_HIP)
+    // computeModel's block reductions count their subgroups as blockDim.x / warpSize and shuffle
+    // across a whole subgroup. A block narrower than one wavefront would make that count 0, so the
+    // reduction would return 0, and the first stage would shuffle lanes outside the block. AMD
+    // wavefronts are 32 or 64 lanes depending on the GPU, so raise the floor to the running
+    // device's width; a 64-lane device gets 64 threads where 32 were asked for, a 32-lane device
+    // is unaffected.
+    {
+        const unsigned int wavefront = static_cast<unsigned int>(cvcuda_hipWavefrontSize());
+        if (block.x < wavefront)
+        {
+            block.x = wavefront;
+        }
+    }
+#endif
+    grid.x = 1;
+    grid.y = batchSize;
+    grid.z = 1;
     computeModel<<<grid, block, 0, stream>>>(srcWrap, dstWrap, srcMean, dstMean, srcShiftSum, dstShiftSum, LtL, W, r, J,
                                              calc_buffer, modelWrap, numPoints, batchSize);
 }

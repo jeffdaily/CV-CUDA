@@ -200,6 +200,38 @@ __host__ inline hipError_t cvcuda_hipDeviceGetAttribute(int *value, hipDeviceAtt
 // the subgroup; the mask just marks participants.
 #define NVCV_WARP_FULL_MASK 0xffffffffffffffffULL
 
+// ---- host-side wavefront width ---------------------------------------------
+// AMD GPUs run 32-lane (RDNA) or 64-lane (CDNA/GCN) wavefronts, so no compile-time
+// constant is correct for every target. A kernel whose block-level reduction derives
+// its subgroup count from blockDim.x / warpSize needs at least one whole wavefront per
+// block, which its launch configuration has to guarantee on the host. Query the running
+// device once; 64 is the safe answer when the query cannot be made, since a block of 64
+// threads is valid on every supported GPU.
+#if defined(__cplusplus)
+__host__ inline int cvcuda_hipWavefrontSize()
+{
+    int device = 0;
+    if (hipGetDevice(&device) != hipSuccess)
+    {
+        return 64;
+    }
+
+    static thread_local int cachedDevice = -1;
+    static thread_local int cachedSize   = 64;
+    if (cachedDevice != device)
+    {
+        int size = 0;
+        if (hipDeviceGetAttribute(&size, hipDeviceAttributeWarpSize, device) != hipSuccess || size <= 0)
+        {
+            return 64;
+        }
+        cachedDevice = device;
+        cachedSize   = size;
+    }
+    return cachedSize;
+}
+#endif
+
 // ---- built-in index types --------------------------------------------------
 // On CUDA blockIdx/blockDim/threadIdx are uint3/dim3, so the kernels' common
 // idiom `blockIdx * blockDim + threadIdx` resolves through the cuda:: compound
