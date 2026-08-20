@@ -66,6 +66,8 @@
 #define cudaErrorMemoryAllocation  hipErrorOutOfMemory
 #define cudaErrorCudartUnloading   hipErrorDeinitialized
 #define cudaErrorTextureFetchFailed hipErrorInvalidTexture
+#define cudaErrorNoDevice          hipErrorNoDevice
+#define cudaErrorInsufficientDriver hipErrorInsufficientDriver
 #define cudaGetLastError           hipGetLastError
 #define cudaPeekAtLastError        hipPeekAtLastError
 #define cudaGetErrorString         hipGetErrorString
@@ -81,6 +83,13 @@
 #define cudaGetDeviceProperties    hipGetDeviceProperties
 #define cudaDevAttrTextureAlignment      hipDeviceAttributeTextureAlignment
 #define cudaDevAttrTexturePitchAlignment hipDeviceAttributeTexturePitchAlignment
+
+// The compute-capability attributes only pick between equivalent kernel
+// implementations tuned per SKU. HIP reports the GPU architecture's major and
+// minor version here, the same values hipDeviceProp_t carries, so the attribute
+// query and the device properties stay consistent.
+#define cudaDevAttrComputeCapabilityMajor hipDeviceAttributeComputeCapabilityMajor
+#define cudaDevAttrComputeCapabilityMinor hipDeviceAttributeComputeCapabilityMinor
 
 // NVCV derives a tensor/image row-pitch alignment from the texture *pitch*
 // alignment device attribute. On NVIDIA that attribute is 32 bytes, so a tightly
@@ -130,6 +139,18 @@ __host__ inline hipError_t cvcuda_hipDeviceGetAttribute(int *value, hipDeviceAtt
 #define cudaMemcpyDeviceToDevice   hipMemcpyDeviceToDevice
 #define cudaMemcpyHostToHost       hipMemcpyHostToHost
 #define cudaMemcpyDefault          hipMemcpyDefault
+#define cudaMemcpy3D               hipMemcpy3D
+#define cudaMemcpy3DAsync          hipMemcpy3DAsync
+#define cudaMemcpy3DParms          hipMemcpy3DParms
+#define cudaExtent                 hipExtent
+#define cudaPos                    hipPos
+#define cudaPitchedPtr             hipPitchedPtr
+#define make_cudaExtent            make_hipExtent
+#define make_cudaPos               make_hipPos
+#define make_cudaPitchedPtr        make_hipPitchedPtr
+#define cudaMallocAsync            hipMallocAsync
+#define cudaFreeAsync              hipFreeAsync
+#define cudaMemGetInfo             hipMemGetInfo
 #define cudaPointerAttributes      hipPointerAttribute_t
 #define cudaPointerGetAttributes   hipPointerGetAttributes
 #define cudaMemoryTypeHost         hipMemoryTypeHost
@@ -160,6 +181,18 @@ __host__ inline hipError_t cvcuda_hipDeviceGetAttribute(int *value, hipDeviceAtt
 #define cudaEventSynchronize       hipEventSynchronize
 #define cudaEventElapsedTime       hipEventElapsedTime
 #define cudaEventDestroy           hipEventDestroy
+
+// ---- runtime: stream capture / graphs --------------------------------------
+#define cudaGraph_t                        hipGraph_t
+#define cudaGraphNode_t                    hipGraphNode_t
+#define cudaGraphGetNodes                  hipGraphGetNodes
+#define cudaGraphDestroy                   hipGraphDestroy
+#define cudaStreamCaptureStatus            hipStreamCaptureStatus
+#define cudaStreamCaptureStatusNone        hipStreamCaptureStatusNone
+#define cudaStreamCaptureModeGlobal        hipStreamCaptureModeGlobal
+#define cudaStreamBeginCapture             hipStreamBeginCapture
+#define cudaStreamEndCapture               hipStreamEndCapture
+#define cudaStreamIsCapturing              hipStreamIsCapturing
 
 // ---- full-wavefront mask ---------------------------------------------------
 // __shfl*_sync on ROCm static_asserts a 64-bit mask regardless of wave width.

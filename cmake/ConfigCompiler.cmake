@@ -163,11 +163,22 @@ function(add_header_compat_test)
             set(inc_paths
                 "$<FILTER:$<TARGET_GENEX_EVAL:${ARG_DEPENDS},$<TARGET_PROPERTY:${ARG_DEPENDS},INTERFACE_INCLUDE_DIRECTORIES>>,EXCLUDE,'^ *$'>")
 
+            unset(extra_defs)
+            if(USE_HIP)
+                # The public headers spell the CUDA runtime types; on ROCm those
+                # come from the compatibility headers, under the same definitions
+                # the library build itself uses.
+                list(APPEND inc_paths "${CVCUDA_HIP_COMPAT_DIR}"
+                                      "$<TARGET_PROPERTY:hip::host,INTERFACE_INCLUDE_DIRECTORIES>")
+                set(extra_defs -DUSE_HIP -D__HIP_PLATFORM_AMD__)
+            endif()
+
             set(bindir ${CMAKE_CURRENT_BINARY_DIR}/${ARG_TARGET}/${comp_str})
             file(MAKE_DIRECTORY ${bindir})
 
             add_custom_command(OUTPUT ${bindir}/${ARG_SOURCE}.d
                 COMMAND ${COMPILER_EXEC_${COMP_STR}} ${CMAKE_CURRENT_BINARY_DIR}/a_${ARG_SOURCE} -M -MT ${bindir}/${ARG_SOURCE}.so -MF ${bindir}/${ARG_SOURCE}.d
+                        ${extra_defs}
                         "-I$<JOIN:${inc_paths},;-I>"
                 DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/a_${ARG_SOURCE}
                 COMMAND_EXPAND_LISTS
@@ -177,6 +188,7 @@ function(add_header_compat_test)
                         ${lang_flag}
                         -o ${bindir}/${ARG_SOURCE}.so
                         ${extra_flags}
+                        ${extra_defs}
                         -std=${ARG_STANDARD}
                         -Wall -Wextra
                         -fPIC -shared

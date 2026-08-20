@@ -10,7 +10,18 @@
 #include <cstdio> // rocRAND's mtgp32 header calls printf without including it
 #include <hiprand/hiprand_kernel.h>
 
-#define curandState   hiprandState
-#define curandState_t hiprandState_t
-#define curand_init   hiprand_init
-#define curand_normal hiprand_normal
+#define curandState    hiprandState
+#define curandState_t  hiprandState_t
+#define curand_init    hiprand_init
+#define curand_normal  hiprand_normal
+#define curand_normal2 hiprand_normal2
+
+// curand keeps one spare Box-Muller normal in the generator state and flags it
+// with boxmuller_flag == EXTRA_FLAG_NORMAL. rocRAND caches the same spare value
+// but marks an empty slot with a NaN sentinel, which its own helper queries.
+#if defined(__cplusplus)
+__host__ __device__ inline bool cvcuda_hipHasCachedNormal(const hiprandState &state)
+{
+    return rocrand_device::detail::engine_boxmuller_helper<rocrand_state_xorwow>::has_float(&state);
+}
+#endif

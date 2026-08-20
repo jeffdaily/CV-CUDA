@@ -206,17 +206,36 @@ include(ConfigCUDA)
 include(ConfigCCache)
 
 add_library(cvcuda_nvtx_config INTERFACE)
-find_path(CVCUDA_NVTX_INCLUDE_DIR
-    NAMES nvtx3/nvToolsExt.h
-    HINTS
-        ${CUDAToolkit_INCLUDE_DIRS}
-        ${CUDAToolkit_TARGET_DIR}/include
-    NO_DEFAULT_PATH
-)
-if(NOT CVCUDA_NVTX_INCLUDE_DIR)
-    message(FATAL_ERROR "nvtx3/nvToolsExt.h not found in the CUDA Toolkit include path")
+if(USE_HIP)
+    # ROCm has no NVTX; roctx is the equivalent profiler range API. The shim
+    # header on the HIP include path forwards nvtx3/nvToolsExt.h to it, so only
+    # the library has to be located here. ROCm ships roctx under the rocprofiler
+    # SDK name and, for older installations, as roctx64.
+    find_library(CVCUDA_ROCTX_LIBRARY
+        NAMES rocprofiler-sdk-roctx roctx64
+        HINTS
+            ${ROCM_PATH}
+            $ENV{ROCM_PATH}
+            /opt/rocm
+        PATH_SUFFIXES lib lib64
+    )
+    if(NOT CVCUDA_ROCTX_LIBRARY)
+        message(FATAL_ERROR "roctx not found in the ROCm installation")
+    endif()
+    target_link_libraries(cvcuda_nvtx_config INTERFACE ${CVCUDA_ROCTX_LIBRARY})
+else()
+    find_path(CVCUDA_NVTX_INCLUDE_DIR
+        NAMES nvtx3/nvToolsExt.h
+        HINTS
+            ${CUDAToolkit_INCLUDE_DIRS}
+            ${CUDAToolkit_TARGET_DIR}/include
+        NO_DEFAULT_PATH
+    )
+    if(NOT CVCUDA_NVTX_INCLUDE_DIR)
+        message(FATAL_ERROR "nvtx3/nvToolsExt.h not found in the CUDA Toolkit include path")
+    endif()
+    target_include_directories(cvcuda_nvtx_config INTERFACE ${CVCUDA_NVTX_INCLUDE_DIR})
 endif()
-target_include_directories(cvcuda_nvtx_config INTERFACE ${CVCUDA_NVTX_INCLUDE_DIR})
 
 if(BUILD_LIB AND BUILD_PYTHON)
     # ConfigPython generates Find*.cmake files that reference the in-tree
